@@ -15,6 +15,7 @@
 #include <fstream>
 #include <print>
 #include <string>
+#include <vector>
 
 int main(int argc, char** argv) {
     // Аргументы разбираются грубо: путь к журналу и ничего больше. Остальное,
@@ -33,26 +34,65 @@ int main(int argc, char** argv) {
     long long lines = 0;
     long long comments = 0;
     std::string line;
-
+    std::vector<std::string> features{
+            "wscript.exe",
+            ".locked",
+            "certutil.exe",
+            "\\Startup\\"
+    };
+    std::vector<std::pair<std::string, int>> detected_features;
     while (std::getline(log, line)) {
         // Счётчик увеличивается до всех проверок: он считает строки файла,
         // а не события. Номер, посчитанный по событиям, бесполезен — по нему
         // нельзя открыть файл и посмотреть.
         ++lines;
-
-        // Строки-комментарии в журнале начинаются с '#'. Они не события,
-        // и детекта по ним быть не должно.
         if (!line.empty() && line[0] == '#') {
             ++comments;
             continue;
         }
+        std::size_t type_start = 0;
+        std::size_t type_end = line.size();
+        const std::size_t type_pos = line.find("type=");
+        if (type_pos != std::string::npos) {
+            type_start = type_pos + 5;
+            type_end = line.find(' ', type_start);
+            if (type_end == std::string::npos) {
+                type_end = line.size();
+            }
+        }
 
-        // >>> Здесь начинается занятие 1.1.
-        //
+        const std::string type_define=line.substr(type_start,type_end-type_start+1);
+        bool flag=false;
+        for (auto& [name_type,count]:detected_features){
+            if (name_type==type_define){
+                ++count;
+                flag = true;
+                break;
+            }
+        }
+        if (!flag){
+            detected_features.push_back({type_define,1});
+        }
+        
+        // Строки-комментарии в журнале начинаются с '#'. Они не события,
+        // и детекта по ним быть не должно.
+        
+        for (const auto& feature:features){
+        if (line.find(feature) !=std::string::npos){
+            std::print("[DETECT] строка {}, признак {}: {}\n",lines,feature,line);
+        }
+        else{
+            continue;
+        }
+        }
         // Проверка признаков и печать детекта. Номер строки, который нужен
         // в выводе, — это lines.
     }
+    //
+    /*for (auto& [type_name,count]: detected_features){
+        std::print("тип {}, количество {}\n",type_name,count);
+    }*/
 
-    std::print("строк {}, из них комментариев {}\n", lines, comments);
+    //std::print("строк {}, из них комментариев {}\n", lines, comments);
     return 0;
 }
