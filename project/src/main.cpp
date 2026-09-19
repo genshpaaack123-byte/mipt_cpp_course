@@ -20,12 +20,25 @@
 int main(int argc, char** argv) {
     // Аргументы разбираются грубо: путь к журналу и ничего больше. Остальное,
     // включая --quiet, добавляется по заданию.
-    if (argc < 2) {
+    std::string log_path;
+    bool quiet = false;
+    for (int i=1;i<argc;i++){
+        const std::string arg=argv[i];
+        if (arg=="--quiet"){
+            quiet=true;
+
+    }
+    else if(log_path.empty()){
+        log_path=arg;
+    }
+    }
+    
+    if (log_path.empty()){
         std::print(stderr, "использование: nano-edr <журнал.log>\n");
         return 2;
     }
 
-    std::ifstream log(argv[1]);
+    std::ifstream log(log_path);
     if (!log) {
         std::print(stderr, "не удалось открыть журнал: {}\n", argv[1]);
         return 2;
@@ -81,18 +94,17 @@ int main(int argc, char** argv) {
         if (line.find(feature) !=std::string::npos){
             std::print("[DETECT] строка {}, признак {}: {}\n",lines,feature,line);
         }
-        else{
-            continue;
-        }
         }
         // Проверка признаков и печать детекта. Номер строки, который нужен
         // в выводе, — это lines.
     }
-    //
-    /*for (auto& [type_name,count]: detected_features){
+    if (!quiet){
+       for (auto& [type_name,count]: detected_features){
         std::print("тип {}, количество {}\n",type_name,count);
-    }*/
+    }
 
-    //std::print("строк {}, из них комментариев {}\n", lines, comments);
-    return 0;
+    std::print("строк {}, из них комментариев {}\n", lines, comments);
+    return 0; 
+    }
+    
 }
