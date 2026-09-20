@@ -39,4 +39,15 @@ void ListClear(EventList* list){
     list->size=0;
 
 }
+EventList::~EventList(){
+        EventNode* current=head;
+        while (current!=nullptr){
+            EventNode* next=current->next;
+            delete current;
+            current=next;
+        }
+        head=nullptr;
+        tail=nullptr;
+        size=0;
+    };
 }
