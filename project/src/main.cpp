@@ -27,10 +27,9 @@ int main(int argc, char** argv) {
         if (arg=="--quiet"){
             quiet=true;
 
-    }
-    else if(log_path.empty()){
-        log_path=arg;
-    }
+        } else if (log_path.empty()) {
+            log_path=arg;
+        }
     }
     
     if (log_path.empty()){
