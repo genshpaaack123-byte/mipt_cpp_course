@@ -1,16 +1,7 @@
-// Каркас агента: читает журнал событий построчно и считает строки.
-//
-// Это заготовка занятия 1.1, а не решение. Детектов она не ищет — их вы
-// добавите здесь же, в отмеченном месте ниже. Формат строки детекта, список
-// признаков и правило про их порядок заданы в постановке занятия: по ним
-// сравниваются эталоны.
-//
-// Весь код лежит в main, и на этом занятии так и надо: функции появятся
-// на занятии 1.2, ссылки — на 1.3. Разбор аргументов, коды возврата и флаг
-// --quiet — часть задания.
-//
-// Запуск:
-//   nano-edr <журнал.log>
+
+#include <charconv>
+#include "parse.h"
+#include "event_list.h"
 #include <cstdio>
 #include <fstream>
 #include <print>
@@ -18,17 +9,38 @@
 #include <vector>
 
 int main(int argc, char** argv) {
-    // Аргументы разбираются грубо: путь к журналу и ничего больше. Остальное,
-    // включая --quiet, добавляется по заданию.
+    nano_edr::EventList list{.capacity = 64};
+    
     std::string log_path;
     bool quiet = false;
     for (int i=1;i<argc;i++){
-        const std::string arg=argv[i];
-        if (arg=="--quiet"){
-            quiet=true;
+        std::string arg=argv[i];
+        if (arg=="--window-size"){
+            if (i+1>=argc){return 2;}
+            if (i+1<argc){
+                std::string string_size=argv[i+1];
+                std::size_t value;
+                auto [ptr,ec]=std::from_chars(string_size.data(),string_size.data()+string_size.size(),value);
+                //if (value!=0){list.capacity=value;}
+                i++;
+                if (!(ec==std::errc{}) || !(ptr==string_size.data()+string_size.size())){
+                    return 2;
+                }else{list.capacity=value;}
 
-        } else if (log_path.empty()) {
-            log_path=arg;
+            }
+        }
+        else if (arg=="--quiet"){
+            quiet=true;}
+        else {
+        if (arg.starts_with("--")) {
+            return 2;
+        }
+
+        if (!log_path.empty()) {
+            return 2;
+        }
+
+        log_path = arg;
         }
     }
     
@@ -52,55 +64,51 @@ int main(int argc, char** argv) {
             "certutil.exe",
             "\\Startup\\"
     };
-    std::vector<std::pair<std::string, int>> detected_features;
+    std::vector<std::pair<std::string, int>> all_type;
     while (std::getline(log, line)) {
-        // Счётчик увеличивается до всех проверок: он считает строки файла,
-        // а не события. Номер, посчитанный по событиям, бесполезен — по нему
-        // нельзя открыть файл и посмотреть.
+        nano_edr::Event event;
         ++lines;
-        if (!line.empty() && line[0] == '#') {
+       std::size_t first = line.find_first_not_of(" \t");
+
+        if (first != std::string::npos &&
+            (line[first] == '#' || line[first] == ';')) {
             ++comments;
             continue;
         }
-        std::size_t type_start = 0;
-        std::size_t type_end = line.size();
-        const std::size_t type_pos = line.find("type=");
-        if (type_pos != std::string::npos) {
-            type_start = type_pos + 5;
-            type_end = line.find(' ', type_start);
-            if (type_end == std::string::npos) {
-                type_end = line.size();
-            }
-        }
 
-        const std::string type_define=line.substr(type_start,type_end-type_start+1);
+        if (nano_edr::IsBlankOrComment(&line)) {
+            continue;
+        }
+        if(!nano_edr::ParseEventLine(&line,&event)){
+            if (line.find('#')){comments++;}
+            continue;}
         bool flag=false;
-        for (auto& [name_type,count]:detected_features){
-            if (name_type==type_define){
-                ++count;
-                flag = true;
-                break;
+        for (auto& [this_type,count]:all_type){
+            if (this_type==event.type){flag=true;count++;break;}
+        }
+        if (!flag){all_type.push_back({event.type,1})}
+        for (const std::string& feature : features){
+            if (!(line.find(feature)==std::string::npos)){
+                std::print("[DETECT] строка {}, признак {}: {}\n",lines,feature,line);
             }
         }
-        if (!flag){
-            detected_features.push_back({type_define,1});
+        const nano_edr::EventNode* i=list.head;
+        if (list.size>2){
+            while (!(i->next->next==nullptr)){
+                i=i->next;
+                std::print<<
+            }
+            if (list.tail!=nullptr){
+                std::print<<
+            }
         }
-        
-        // Строки-комментарии в журнале начинаются с '#'. Они не события,
-        // и детекта по ним быть не должно.
-        
-        for (const auto& feature:features){
-        if (line.find(feature) !=std::string::npos){
-            std::print("[DETECT] строка {}, признак {}: {}\n",lines,feature,line);
-        }
-        }
-        // Проверка признаков и печать детекта. Номер строки, который нужен
-        // в выводе, — это lines.
+        nano_edr::ListPushBack(&list, &event);
+
     }
     if (!quiet){
-       for (auto& [type_name,count]: detected_features){
+       /*for (auto& [type_name,count]: detected_features){
         std::print("тип {}, количество {}\n",type_name,count);
-    }
+    }*/
 
     std::print("строк {}, из них комментариев {}\n", lines, comments);
     return 0; 
