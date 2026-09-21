@@ -45,8 +45,7 @@ foreach(f "${NANO_EDR_OS_BIN}" "${NANO_EDR_EDR_BIN}")
     if(NOT EXISTS "${f}")
         message(FATAL_ERROR
             "Не найдена библиотека: ${f}"
-            "
-Комплект не несёт границ под ${NANO_EDR_PLATFORM}. "
+            "\nКомплект не несёт границ под ${NANO_EDR_PLATFORM}. "
             "Обновите клон (git pull); если каталога "
             "lib/${NANO_EDR_PLATFORM} нет и после этого — напишите "
             "преподавателю.")
@@ -72,19 +71,17 @@ if(WIN32)
     set_target_properties(edr PROPERTIES IMPORTED_IMPLIB "${NANO_EDR_EDR_LINK}")
 endif()
 
-# Библиотека ASan из состава MSVC. Без неё собранный с /fsanitize=address
-# исполняемый файл не стартует вовсе: загрузчик не находит DLL и возвращает
-# 0xC0000135, а сообщения нет никакого. Visual Studio добавляет её в PATH
-# при запуске из среды, но из обычной оболочки этого не происходит, поэтому
-# библиотека кладётся рядом с exe так же, как os и edr.
-if(NANO_EDR_SANITIZE AND MSVC)
+# Библиотека ASan из состава MSVC/Clang на Windows. Без неё собранный
+# с ASan исполняемый файл не стартует: загрузчик возвращает 0xC0000135.
+# Проверяем её для любого Windows-компилятора, в том числе clang++ с MSVC ABI.
+if(NANO_EDR_SANITIZE AND WIN32)
     get_filename_component(NANO_EDR_MSVC_BIN "${CMAKE_CXX_COMPILER}" DIRECTORY)
     file(GLOB NANO_EDR_ASAN_RUNTIME
          "${NANO_EDR_MSVC_BIN}/clang_rt.asan_dynamic-*.dll")
     if(NOT NANO_EDR_ASAN_RUNTIME)
         message(FATAL_ERROR
-            "Не найдена библиотека ASan рядом с cl.exe (${NANO_EDR_MSVC_BIN}).\n"
-            "В установщике Visual Studio нужен компонент «C++ AddressSanitizer».")
+            "Не найдена библиотека ASan рядом с компилятором (${NANO_EDR_MSVC_BIN}).\n"
+            "Проверьте установку компонента C++ AddressSanitizer в Visual Studio.")
     endif()
 endif()
 
