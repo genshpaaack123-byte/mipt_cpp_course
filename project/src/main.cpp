@@ -5,7 +5,6 @@
 #include <print>
 #include <string>
 #include <vector>
-
 #include "event_list.h"
 #include "parse.h"
 
@@ -18,28 +17,17 @@ int main(int argc, char** argv) {
         const std::string arg = argv[i];
 
         if (arg == "--window-size") {
-            if (i + 1 >= argc) {
-                return 2;
-            }
+            if (i + 1 >= argc) {return 2;}
 
             const std::string value_text = argv[++i];
             std::size_t value = 0;
-            const auto [ptr, ec] = std::from_chars(
-                value_text.data(),
-                value_text.data() + value_text.size(),
-                value);
-
-            if (ec != std::errc{} ||
-                ptr != value_text.data() + value_text.size()) {
-                return 2;
-            }
+            const auto [ptr, ec] = std::from_chars(value_text.data(),value_text.data() + value_text.size(),value);
+            if (ec != std::errc{} ||ptr != value_text.data() + value_text.size()) {return 2;}
             list.capacity = value;
         } else if (arg == "--quiet") {
             quiet = true;
         } else {
-            if (arg.starts_with("--") || !log_path.empty()) {
-                return 2;
-            }
+            if (arg.starts_with("--") || !log_path.empty()) {return 2;}
             log_path = arg;
         }
     }
@@ -76,14 +64,10 @@ int main(int argc, char** argv) {
             continue;
         }
 
-        if (nano_edr::IsBlankOrComment(&line)) {
-            continue;
-        }
+        if (nano_edr::IsBlankOrComment(&line)) {continue;}
 
         nano_edr::Event event;
-        if (!nano_edr::ParseEventLine(&line, &event)) {
-            continue;
-        }
+        if (!nano_edr::ParseEventLine(&line, &event)) {continue;}
 
         bool known_type = false;
         for (auto& [type_name, count] : all_type) {
@@ -101,41 +85,25 @@ int main(int argc, char** argv) {
         for (const std::string& feature : features) {
             if (line.find(feature) != std::string::npos) {
                 detected = true;
-                std::print(
-                    "[DETECT] строка {}, признак {}: {}\n",
-                    lines,
-                    feature,
-                    line);
+                std::print("[DETECT] строка {}, признак {}: {}\n",lines,feature,line);
             }
         }
 
         if (detected && !quiet) {
             if (list.size == 1) {
-                const nano_edr::Event& previous = list.head->event;
-                std::print(
-                    "[CTX] -1: ts={} type={} pid={}\n",
-                    previous.ts,
-                    previous.type,
-                    previous.pid);
+                const nano_edr::Event& one_node = list.head->event;
+                std::print("[CTX] -1: ts={} type={} pid={}\n",one_node.ts,one_node.type,one_node.pid);
             } else if (list.size >= 2) {
                 const nano_edr::EventNode* context = list.head;
                 if (list.size > 2) {
-                    for (std::size_t j = 0; j < list.size - 2; ++j) {
+                    for (std::size_t i = 0; i < list.size - 2; ++i) {
                         context = context->next;
                     }
                 }
 
-                std::print(
-                    "[CTX] -2: ts={} type={} pid={}\n",
-                    context->event.ts,
-                    context->event.type,
-                    context->event.pid);
+                std::print("[CTX] -2: ts={} type={} pid={}\n",context->event.ts,context->event.type,context->event.pid);
                 context = context->next;
-                std::print(
-                    "[CTX] -1: ts={} type={} pid={}\n",
-                    context->event.ts,
-                    context->event.type,
-                    context->event.pid);
+                std::print("[CTX] -1: ts={} type={} pid={}\n",context->event.ts,context->event.type,context->event.pid);
             }
         }
 
