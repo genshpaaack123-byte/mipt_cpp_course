@@ -1,4 +1,4 @@
-#include "fields.h"
+/*#include "fields.h"
 #include <charconv>
 #include <charconv>
 #include <stdexcept>
@@ -27,3 +27,4 @@ bool GetIntField(const nano_edr::Event& event, const std::string& key, uint64_t*
     }
     return true;
 }
+*/
