@@ -3,6 +3,14 @@
 # Библиотеки поставляются собранными; всё, что о них нужно знать, — в
 # include/os.h, include/edr.h и SPEC.md.
 
+# Каталог границ выбирается по системе. Границы поставляются под две:
+# win-x64 и linux-x64.
+#
+# macOS проверяется отдельно и раньше UNIX, хотя своих границ у неё нет —
+# именно поэтому. macOS это тоже UNIX, и без этой ветви на macOS выбрался бы
+# linux-x64: библиотеки там лежат, конфигурация прошла бы успешно, а падало
+# бы потом на компоновке жалобой на формат файла. Отказ сразу и по делу
+# лучше успеха, который ничем не кончится.
 if(WIN32)
     set(NANO_EDR_PLATFORM win-x64)
 elseif(APPLE)
@@ -37,12 +45,17 @@ foreach(f "${NANO_EDR_OS_BIN}" "${NANO_EDR_EDR_BIN}")
     if(NOT EXISTS "${f}")
         message(FATAL_ERROR
             "Не найдена библиотека: ${f}"
-            "\nКомплект не несёт границ под ${NANO_EDR_PLATFORM}. "
+            "
+Комплект не несёт границ под ${NANO_EDR_PLATFORM}. "
             "Обновите клон (git pull); если каталога "
             "lib/${NANO_EDR_PLATFORM} нет и после этого — напишите "
             "преподавателю.")
     endif()
 endforeach()
+
+# IMPORTED-цели, а не голые пути в target_link_libraries: тогда заголовки,
+# определение OS_USE_SHARED и сама библиотека приезжают одним требованием,
+# и забыть половину невозможно.
 
 add_library(os SHARED IMPORTED GLOBAL)
 set_target_properties(os PROPERTIES IMPORTED_LOCATION "${NANO_EDR_OS_BIN}")
@@ -59,33 +72,30 @@ if(WIN32)
     set_target_properties(edr PROPERTIES IMPORTED_IMPLIB "${NANO_EDR_EDR_LINK}")
 endif()
 
-# ASan runtime на Windows нужен не только при MSVC, но и при clang++ с MSVC ABI.
-# В Visual Studio clang++.exe обычно лежит в VC/Tools/Llvm, а DLL ASan —
-# в VC/Tools/MSVC/<version>/bin/Hostx64/x64, поэтому ищем в обоих местах.
-if(NANO_EDR_SANITIZE AND WIN32)
-    get_filename_component(NANO_EDR_COMPILER_BIN "${CMAKE_CXX_COMPILER}" DIRECTORY)
+# Библиотека ASan из состава MSVC. Без неё собранный с /fsanitize=address
+# исполняемый файл не стартует вовсе: загрузчик не находит DLL и возвращает
+# 0xC0000135, а сообщения нет никакого. Visual Studio добавляет её в PATH
+# при запуске из среды, но из обычной оболочки этого не происходит, поэтому
+# библиотека кладётся рядом с exe так же, как os и edr.
+if(NANO_EDR_SANITIZE AND MSVC)
+    get_filename_component(NANO_EDR_MSVC_BIN "${CMAKE_CXX_COMPILER}" DIRECTORY)
     file(GLOB NANO_EDR_ASAN_RUNTIME
-         "${NANO_EDR_COMPILER_BIN}/clang_rt.asan_dynamic-*.dll")
-
-    if(NOT NANO_EDR_ASAN_RUNTIME)
-        file(GLOB NANO_EDR_MSVC_TOOLSETS
-             "${NANO_EDR_COMPILER_BIN}/../../../MSVC/*")
-        foreach(toolset IN LISTS NANO_EDR_MSVC_TOOLSETS)
-            file(GLOB NANO_EDR_ASAN_CANDIDATES
-                 "${toolset}/bin/Hostx64/x64/clang_rt.asan_dynamic-*.dll"
-                 "${toolset}/bin/Hostx64/x86/clang_rt.asan_dynamic-*.dll"
-                 "${toolset}/bin/Hostx86/x86/clang_rt.asan_dynamic-*.dll")
-            list(APPEND NANO_EDR_ASAN_RUNTIME ${NANO_EDR_ASAN_CANDIDATES})
-        endforeach()
-    endif()
-
+         "${NANO_EDR_MSVC_BIN}/clang_rt.asan_dynamic-*.dll")
     if(NOT NANO_EDR_ASAN_RUNTIME)
         message(FATAL_ERROR
-            "Не найдена библиотека ASan в каталоге компилятора или MSVC toolset.\n"
-            "Проверьте установку компонента C++ AddressSanitizer в Visual Studio.")
+            "Не найдена библиотека ASan рядом с cl.exe (${NANO_EDR_MSVC_BIN}).\n"
+            "В установщике Visual Studio нужен компонент «C++ AddressSanitizer».")
     endif()
 endif()
 
+# Чтобы агент запускался из любого каталога, а не только из каталога сборки.
+#
+# На Windows DLL ищется рядом с exe, поэтому её туда надо положить: этим
+# занимается nano_edr_copy_runtime() ниже. На ELF путь к библиотеке зашивается
+# в сам исполняемый файл через RPATH, и копировать ничего не нужно.
+#
+# Достаточно вызвать функцию для одной цели: все исполняемые файлы проекта,
+# включая программы выданных тестов, собираются в один каталог.
 function(nano_edr_copy_runtime target)
     if(WIN32)
         add_custom_command(TARGET ${target} POST_BUILD
@@ -93,7 +103,7 @@ function(nano_edr_copy_runtime target)
                     "$<TARGET_FILE:os>" "$<TARGET_FILE:edr>"
                     ${NANO_EDR_ASAN_RUNTIME}
                     "$<TARGET_FILE_DIR:${target}>"
-            COMMENT "Кладу os.dll, edr.dll и ASan runtime рядом с ${target}")
+            COMMENT "Кладу os.dll и edr.dll рядом с ${target}")
     else()
         set_target_properties(${target} PROPERTIES
             BUILD_RPATH "${NANO_EDR_LIB_DIR}")
