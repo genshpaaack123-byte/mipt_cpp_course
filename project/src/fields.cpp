@@ -18,7 +18,7 @@ const std::string* FindField(const Event& event, const std::string& key){
 
 const std::string& GetRequiredField(const Event& event, const std::string& key){
     const std::string *p=nano_edr::FindField(event,key);
-    if (!p){throw std::invalid_argument("Нет обязательного поля");}
+    if (!p){throw std::invalid_argument("Нет обязательного поля" + key);}
     return *p;
 }
 
@@ -61,11 +61,14 @@ bool IsNetConnect(const Event& event){
 }
 
 bool PathEndsWith(const Event& event, const std::string& suffix){
-    for (const Field& field: event.fields){
-        if (field.key=="path" || field.key=="image" || field.key=="to"){
-            if ((nano_edr::NormalizePath(field.value)).find(nano_edr::NormalizePath(suffix))!=std::string::npos){return true;}
-        }
-    }
+    
+    const std::string *path=FindField(event,"path");
+    if (!path){return false;}
+
+    const std::string normalize_path=NormalizePath(*path);
+    const std::string normalize_suffix=NormalizePath(suffix);
+    if (normalize_path.find(normalize_suffix)){return true;}
+
     return false;
 }
 
@@ -83,8 +86,8 @@ std::string NormalizePath(const std::string& path){
     for (std::size_t i=position_temp;i<path.size();i++){
         char symbol=path[i];
         symbol=static_cast<char>(std::tolower(static_cast<unsigned char>(symbol)));
-        if (symbol=='\\' || symbol=='/'){
-            symbol='/';
+        if (symbol=='/'){
+            symbol='\\';
             if (new_path.empty() || new_path[-1]!='/'){new_path+=symbol;}else{continue;}
         }else{new_path+=symbol;}
     }
@@ -92,12 +95,22 @@ std::string NormalizePath(const std::string& path){
 }
 
 bool CommandLineContains(const Event& event, const std::string& needle){
-    for (const Field& field: event.fields){
-        if (field.key=="cmdline"){
-            if ((field.value).find(needle)!=std::string::npos){return true;}
-        }
+    const std::string* cmdline=FindField(event,"cmdline");
+    if (!cmdline){return false;}
+
+    std::string normalize_cmd;
+    std::string normalize_needle;
+
+    for (std::size_t i=0;i<(*cmdline).size();i++){
+        char symbol=(*cmdline)[i];
+        symbol=static_cast<char>(std::tolower(static_cast<unsigned char>(symbol)));
+        normalize_cmd+=symbol;
     }
-    return false;
+    for (std::size_t i=0;i<needle.size();i++){
+        char symbol=needle[i];
+        symbol=static_cast<char>(std::tolower(static_cast<unsigned char>(symbol)));
+        normalize_cmd+=symbol;
+    }
 
 }
 }

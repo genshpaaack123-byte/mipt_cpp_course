@@ -6,15 +6,19 @@ namespace nano_edr{
 
 bool ScriptHostFromTemp(const Event& event){
     if (!IsProcessStart(event)){return false;}
-    const std::string path=GetRequiredField(event,"image");
-    if (!PathEndsWith(event,"wscript.exe") || !PathEndsWith(event,"cscript.exe")){return false;}
+    
+    const std::string& image=GetRequiredField(event,"image");
+    std::string normalize_image=NormalizePath(image);
+    if (!(normalize_image.ends_with("wscript.exe") || normalize_image.ends_with("wscript.exe"))){return false;}
     if (!(CommandLineContains(event,"\\appdata\\local\\temp\\") || CommandLineContains(event,"\\windows\\temp\\"))){return false;}
     return true; 
 }
 bool LolbinDownload(const Event& event){
     if (!IsProcessStart(event)){return false;}
-    const std::string path=GetRequiredField(event,"image");
-    if (!(PathEndsWith(event,"certutil.exe") || PathEndsWith(event,"bitsadmin.exe"))){return false;}
+
+    const std::string& image=GetRequiredField(event,"image");
+    std::string normalize_image=NormalizePath(image);
+    if (!(normalize_image.ends_with("certutil.exe") || normalize_image.ends_with("bitsadmin.exe"))){return false;}
     if (!(CommandLineContains(event,"urlcache")
      || CommandLineContains(event,"transfer")
       || CommandLineContains(event,"http:")
@@ -23,22 +27,36 @@ bool LolbinDownload(const Event& event){
 }
 bool HiddenPowershell(const Event& event){
     if (!IsProcessStart(event)){return false;}
-    const std::string path=GetRequiredField(event,"image");
-    if (!(PathEndsWith(event,"powershell.exe") || PathEndsWith(event,"pwsh.exe"))){return false;}
+    
+    const std::string& image=GetRequiredField(event,"image");
+    std::string normalize_image=NormalizePath(image);
+    if (!(normalize_image.ends_with("powershell.exe") || normalize_image.ends_with("pwsh.exe"))){return false;}
     if (!(CommandLineContains(event,"-w hidden")
-     || CommandLineContains(event,"-windowstyle")
+     || CommandLineContains(event,"-windowstyle hidden")
       || CommandLineContains(event,"-enc")
        || CommandLineContains(event,"-encodedcommand"))){return false;}
     return true; 
 }
 bool AutostartWrite(const Event& event){
     if (!IsFileWrite(event)){return false;}
-    const std::string path=GetRequiredField(event,"path");
     if (!PathEndsWith(event,"\\start menu\\programs\\startup\\")){return false;}
+    const std::string* to=FindField(event,"to");
+    if (to){
+        std::string normalize_to=NormalizePath(*to);
+        if (normalize_to.find("\\start menu\\programs\\startup\\")==std::string::npos){return false;} 
+    }
     return true; 
 }
 bool RansomExtension(const Event& event){
     if (!IsFileWrite(event)){return false;}
+    if (!PathEndsWith(event,".locked")){return false;}
+    const std::string* to=FindField(event,"to");
+    if (to){
+        std::string normalize_to=NormalizePath(*to);
+        if (!normalize_to.ends_with(".locked")){return false;} 
+    }
+    return true; 
+    
     const std::string path=GetRequiredField(event,"path");
     if (!PathEndsWith(event,".locked")){return false;}
     return true; 

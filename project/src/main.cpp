@@ -55,13 +55,16 @@ int main(int argc, char** argv) {
 
     while (std::getline(log, line)) {
         ++lines;
-        std::size_t first = line.find_first_not_of(" \t");
+        /*std::size_t first = line.find_first_not_of(" \t");
         if (first != std::string::npos &&
             (line[first] == '#' || line[first] == ';')) {
             ++comments;
             continue;
+        }*/
+        if (nano_edr::IsBlankOrComment(&line)) {
+            ++comments;
+            continue;
         }
-        if (nano_edr::IsBlankOrComment(&line)) {continue;}
         
         //парсинг+вывод
         nano_edr::Event event;
@@ -76,7 +79,7 @@ int main(int argc, char** argv) {
             }
         }
         if (!flag){
-            all_types.push_back({event.type,0});
+            all_types.push_back({event.type,1});
         }
         //контекст
         if (detect_count!=0 && !quiet) { //два последних узла на вывод
@@ -108,5 +111,7 @@ int main(int argc, char** argv) {
     }
 
     return 0;
-}catch (const std::exception& error){std::print("{}",error.what());}
+}catch (const std::exception& error){
+    std::print("{}\n",error.what());
+    return 1;}
 }
