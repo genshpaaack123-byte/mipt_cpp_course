@@ -67,7 +67,7 @@ bool PathEndsWith(const Event& event, const std::string& suffix){
 
     const std::string normalize_path=NormalizePath(*path);
     const std::string normalize_suffix=NormalizePath(suffix);
-    if (normalize_path.find(normalize_suffix)){return true;}
+    if (normalize_path.compare(normalize_path.size()-normalize_suffix.size(),normalize_suffix.size(),normalize_suffix)==0){return true;} //начиная с , кол символов из сравниваемого слова
 
     return false;
 }
@@ -77,10 +77,10 @@ std::string NormalizePath(const std::string& path){
     std::string new_path;
     std::size_t position_temp=0;
     if (path.find("%TEMP%")!=std::string::npos){
-        new_path+="/appdata/local/temp";
+        new_path+="\\appdata\\local\\temp";
         position_temp=6;
     }else if (path.find("%TMP%")!=std::string::npos){
-        new_path+="/appdata/local/temp";
+        new_path+="\\appdata\\local\\temp";
         position_temp=5;
     }
     for (std::size_t i=position_temp;i<path.size();i++){
@@ -88,7 +88,7 @@ std::string NormalizePath(const std::string& path){
         symbol=static_cast<char>(std::tolower(static_cast<unsigned char>(symbol)));
         if (symbol=='/'){
             symbol='\\';
-            if (new_path.empty() || new_path[-1]!='/'){new_path+=symbol;}else{continue;}
+            if (new_path.empty() || new_path[-1]!='\\'){new_path+=symbol;}else{continue;}
         }else{new_path+=symbol;}
     }
     return new_path;
@@ -96,8 +96,7 @@ std::string NormalizePath(const std::string& path){
 
 bool CommandLineContains(const Event& event, const std::string& needle){
     const std::string* cmdline=FindField(event,"cmdline");
-    if (!cmdline){return false;}
-
+    if (!cmdline){return false;};
     std::string normalize_cmd;
     std::string normalize_needle;
 
@@ -109,8 +108,10 @@ bool CommandLineContains(const Event& event, const std::string& needle){
     for (std::size_t i=0;i<needle.size();i++){
         char symbol=needle[i];
         symbol=static_cast<char>(std::tolower(static_cast<unsigned char>(symbol)));
-        normalize_cmd+=symbol;
+        normalize_needle+=symbol;
     }
+    if (normalize_cmd.find(normalize_needle) != std::string::npos){return true;}
+    return false;
 
 }
 }

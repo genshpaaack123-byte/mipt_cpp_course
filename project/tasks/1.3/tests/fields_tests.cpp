@@ -247,7 +247,6 @@ TEST_CASE("CommandLineContains без поля cmdline даёт false") {
 TEST_CASE("NormalizePath опускает регистр и приводит разделители") {
     CHECK(NormalizePath("C:/Users/Max/A.JS") == "c:\\users\\max\\a.js");
 }
-
 TEST_CASE("NormalizePath раскрывает %TEMP%") {
     // Настоящего окружения у журнала нет, поэтому раскрытие каноническое:
     // важно не совпадение путей целиком, а общий кусок \appdata\local\temp\ —
