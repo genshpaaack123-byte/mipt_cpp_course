@@ -1,5 +1,4 @@
 #include "fields.h"
-#include <algorithm>
 #include <charconv>
 #include <stdexcept>
 #include "event.h"
@@ -83,7 +82,7 @@ std::string NormalizePath(const std::string& path){
         new_path+="/appdata/local/temp";
         position_temp=5;
     }
-    for (int i=position_temp;i<path.size();i++){
+    for (std::size_t i=position_temp;i<path.size();i++){
         char symbol=path[i];
         symbol=static_cast<char>(std::tolower(static_cast<unsigned char>(symbol)));
         if (symbol=='\\' || symbol=='/'){
