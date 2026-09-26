@@ -85,11 +85,12 @@ std::string NormalizePath(const std::string& path){
     }
     for (std::size_t i=position_temp;i<path.size();i++){
         char symbol=path[i];
-        symbol=static_cast<char>(std::tolower(static_cast<unsigned char>(symbol)));
-        if (symbol=='/'){
-            symbol='\\';
-            if (new_path.empty() || new_path[-1]!='\\'){new_path+=symbol;}else{continue;}
-        }else{new_path+=symbol;}
+        if (symbol=='/' || symbol =='\\'){
+            if (new_path.empty() || new_path.back() != '\\'){new_path+=symbol;}else{continue;}
+        }else{
+            symbol=static_cast<char>(std::tolower(static_cast<unsigned char>(symbol)));
+            new_path+=symbol;
+        }
     }
     return new_path;
 }
