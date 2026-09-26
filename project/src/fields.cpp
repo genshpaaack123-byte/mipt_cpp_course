@@ -61,14 +61,12 @@ bool IsNetConnect(const Event& event){
 }
 
 bool PathEndsWith(const Event& event, const std::string& suffix){
-    bool fl=false; //флаг наличия ключа
     for (const Field& field: event.fields){
         if (field.key=="path" || field.key=="image" || field.key=="to"){
-            fl=true;
-            if ((nano_edr::NormalizePath(field.value)).find(nano_edr::NormalizePath(suffix))==std::string::npos){return false;}else{return true;}
+            if ((nano_edr::NormalizePath(field.value)).find(nano_edr::NormalizePath(suffix))!=std::string::npos){return true;}
         }
     }
-    if (fl==false){return false;}
+    return false;
 }
 
 
@@ -94,13 +92,12 @@ std::string NormalizePath(const std::string& path){
 }
 
 bool CommandLineContains(const Event& event, const std::string& needle){
-    bool fl=false; //флаг наличия ключа
     for (const Field& field: event.fields){
         if (field.key=="cmdline"){
-            fl=true;
-            if ((field.value).find(needle)==std::string::npos){return false;}else{return true;}
+            if ((field.value).find(needle)!=std::string::npos){return true;}
         }
     }
-    if (fl==false){return false;}
+    return false;
+
 }
 }

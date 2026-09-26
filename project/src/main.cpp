@@ -11,6 +11,7 @@
 #include "agent_rules.h"
 
 int main(int argc, char** argv) {
+    try{
     nano_edr::EventList list{.capacity = 64};
     std::string log_path;
     bool quiet=false;
@@ -107,4 +108,5 @@ int main(int argc, char** argv) {
     }
 
     return 0;
+}catch (const std::exception& error){std::print("{}",error.what());}
 }
