@@ -39,23 +39,23 @@ bool HiddenPowershell(const Event& event){
 }
 bool AutostartWrite(const Event& event){
     if (!IsFileWrite(event)){return false;}
-    if (!PathEndsWith(event,"\\start menu\\programs\\startup\\")){return false;}
     const std::string* to=FindField(event,"to");
     if (to){
         std::string normalize_to=NormalizePath(*to);
-        if (normalize_to.find("\\start menu\\programs\\startup\\")==std::string::npos){return false;} 
+        if (normalize_to.find("\\start menu\\programs\\startup\\")==std::string::npos){return false;}else{return true;}
     }
+    const std::string path=GetRequiredField(event,"path");
+    const std::string normalize_path=NormalizePath(path);
+    if (normalize_path.find("\\start menu\\programs\\startup\\")==std::string::npos){return false;}
     return true; 
 }
 bool RansomExtension(const Event& event){
     if (!IsFileWrite(event)){return false;}
-    if (!PathEndsWith(event,".locked")){return false;}
     const std::string* to=FindField(event,"to");
     if (to){
         std::string normalize_to=NormalizePath(*to);
-        if (!normalize_to.ends_with(".locked")){return false;} 
-    }
-    return true; 
+        if (normalize_to.ends_with(".locked")){return false;}
+    }else{return true;}
     
     const std::string path=GetRequiredField(event,"path");
     if (!PathEndsWith(event,".locked")){return false;}

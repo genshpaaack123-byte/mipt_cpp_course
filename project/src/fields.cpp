@@ -18,7 +18,7 @@ const std::string* FindField(const Event& event, const std::string& key){
 
 const std::string& GetRequiredField(const Event& event, const std::string& key){
     const std::string *p=nano_edr::FindField(event,key);
-    if (!p){throw std::invalid_argument("Нет обязательного поля" + key);}
+    if (!p){throw std::invalid_argument("Нет обязательного поля " + key);}
     return *p;
 }
 
@@ -67,7 +67,7 @@ bool PathEndsWith(const Event& event, const std::string& suffix){
 
     const std::string normalize_path=NormalizePath(*path);
     const std::string normalize_suffix=NormalizePath(suffix);
-    if (normalize_path.compare(normalize_path.size()-normalize_suffix.size(),normalize_suffix.size(),normalize_suffix)==0){return true;} //начиная с , кол символов из сравниваемого слова
+    if (normalize_path.ends_with(normalize_suffix)){return true;}
 
     return false;
 }
@@ -86,7 +86,7 @@ std::string NormalizePath(const std::string& path){
     for (std::size_t i=position_temp;i<path.size();i++){
         char symbol=path[i];
         if (symbol=='/' || symbol =='\\'){
-            if (new_path.empty() || new_path.back() != '\\'){new_path+=symbol;}else{continue;}
+            if (new_path.empty() || new_path.back() != '\\'){new_path+='\\';}else{continue;}
         }else{
             symbol=static_cast<char>(std::tolower(static_cast<unsigned char>(symbol)));
             new_path+=symbol;
