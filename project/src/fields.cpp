@@ -30,7 +30,7 @@ bool GetIntField(const Event& event, const std::string& key, uint64_t* out){
     else{ 
         uint64_t temp_out; //чтобы не записать кал по указателю
         const auto [ptr,ec]=std::from_chars((*p).data(),(*p).data()+(*p).size(),temp_out);
-        if (ec!=std::errc()){return false;} //учитывает переполнение или если не разобралось
+        if (ec!=std::errc() || (ptr!=(*p).data()+(*p).size())){return false;} //учитывает переполнение или если не разобралось
         *out=temp_out;
         return true;
     }
@@ -99,7 +99,7 @@ bool CommandLineContains(const Event& event, const std::string& needle){
     for (const Field& field: event.fields){
         if (field.key=="cmdline"){
             fl=true;
-            if ((nano_edr::NormalizePath(field.value)).find(nano_edr::NormalizePath(needle))==std::string::npos){return false;}else{return true;}
+            if ((field.value).find(needle)==std::string::npos){return false;}else{return true;}
         }
     }
     if (fl==false){return false;}

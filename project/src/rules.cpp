@@ -4,13 +4,13 @@ namespace nano_edr{
 const char* SeverityName(Severity severity){
     switch (severity){
         case Severity::kLow:
-            return "low";
+            return "LOW";
         case Severity::kMedium:
-            return "medium";
+            return "MEDIUM";
         case Severity::kHigh:
-            return "high";
+            return "HIGH";
         case Severity::kCritical:
-            return "critical";
+            return "CRITICAL";
         default:
             return "?";
     }
